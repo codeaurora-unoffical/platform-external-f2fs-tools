@@ -302,6 +302,10 @@ int f2fs_init_sparse_file(void)
 	}
 	blocks_count = c.device_size / F2FS_BLKSIZE;
 	blocks = calloc(blocks_count, sizeof(char *));
+	if (!blocks) {
+		MSG(0, "\tError: Calloc Failed for blocks!!!\n");
+		return -1;
+	}
 
 	return sparse_file_foreach_chunk(f2fs_sparse_file, true, false,
 				sparse_import_segment, NULL);
@@ -311,6 +315,7 @@ int f2fs_init_sparse_file(void)
 #endif
 }
 
+#define MAX_CHUNK_SIZE (1 * 1024 * 1024 * 1024ULL)
 int f2fs_finalize_device(void)
 {
 	int i;
@@ -337,6 +342,12 @@ int f2fs_finalize_device(void)
 				chunk_start = -1;
 			} else if (blocks[j] && chunk_start == -1) {
 				chunk_start = j;
+			} else if (blocks[j] && (chunk_start != -1) &&
+				 (j + 1 - chunk_start >=
+					(MAX_CHUNK_SIZE / F2FS_BLKSIZE))) {
+				ret = sparse_merge_blocks(chunk_start,
+							  j + 1 - chunk_start);
+				chunk_start = -1;
 			}
 			ASSERT(!ret);
 		}
