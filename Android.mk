@@ -5,7 +5,7 @@ ifneq (,$filter linux darwin,$(HOST_OS))
 
 # The versions depend on $(LOCAL_PATH)/VERSION
 version_CFLAGS := -DF2FS_MAJOR_VERSION=1 -DF2FS_MINOR_VERSION=9 -DF2FS_TOOLS_VERSION=\"1.9.0\" -DF2FS_TOOLS_DATE=\"2017-11-13\"
-common_CFLAGS := -DWITH_ANDROID $(version_CFLAGS) \
+common_CFLAGS := -DWITH_ANDROID -DWITH_BLKDISCARD $(version_CFLAGS) \
     -Wall -Werror \
     -Wno-format \
     -Wno-macro-redefined \
