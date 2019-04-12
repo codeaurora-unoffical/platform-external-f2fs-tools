@@ -25,6 +25,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <inttypes.h>
 #include <string.h>
 #include <signal.h>
 #include <termios.h>
@@ -155,7 +156,7 @@ static void do_pinfile(int argc, char **argv, const struct cmd_desc *cmd)
 static void do_write(int argc, char **argv, const struct cmd_desc *cmd)
 {
 	u64 buf_size = 0, inc_num = 0, ret = 0, written = 0;
-	loff_t offset;
+	u64 offset;
 	char *buf = NULL;
 	unsigned bs, count, i;
 	int flags = 0;
@@ -219,7 +220,7 @@ static void do_write(int argc, char **argv, const struct cmd_desc *cmd)
 		written += ret;
 	}
 
-	printf("Written %lu bytes with pattern=%s\n", written, argv[4]);
+	printf("Written %"PRIu64" bytes with pattern=%s\n", written, argv[4]);
 	exit(0);
 }
 
@@ -234,7 +235,7 @@ static void do_write(int argc, char **argv, const struct cmd_desc *cmd)
 static void do_read(int argc, char **argv, const struct cmd_desc *cmd)
 {
 	u64 buf_size = 0, ret = 0, read_cnt = 0;
-	loff_t offset;
+	u64 offset;
 	char *buf = NULL;
 	char *print_buf = NULL;
 	unsigned bs, count, i, print_bytes;
@@ -295,12 +296,12 @@ static void do_read(int argc, char **argv, const struct cmd_desc *cmd)
 		if (i == 0)
 			memcpy(print_buf, buf, print_bytes);
 	}
-	printf("Read %lu bytes and print %d bytes:\n", read_cnt, print_bytes);
-	printf("%08lx : ", offset);
+	printf("Read %"PRIu64" bytes and print %u bytes:\n", read_cnt, print_bytes);
+	printf("%08"PRIx64" : ", offset);
 	for (i = 1; i <= print_bytes; i++) {
 		printf("%02x", print_buf[i - 1]);
 		if (i % 16 == 0)
-			printf("\n%08lx : ", offset + 16 * i);
+			printf("\n%08"PRIx64" : ", offset + 16 * i);
 		else if (i % 2 == 0)
 			printf(" ");
 	}
@@ -325,7 +326,7 @@ struct file_ext {
 
 static void do_fiemap(int argc, char **argv, const struct cmd_desc *cmd)
 {
-	loff_t offset;
+	u64 offset;
 	u32 blknum;
 	unsigned count, i;
 	int fd;
@@ -345,7 +346,7 @@ static void do_fiemap(int argc, char **argv, const struct cmd_desc *cmd)
 		exit(1);
 	}
 
-	printf("Fiemap: offset = %08lx len = %d\n", offset, count);
+	printf("Fiemap: offset = %08"PRIx64" len = %d\n", offset, count);
 	for (i = 0; i < count; i++) {
 		blknum = offset + i;
 
@@ -373,19 +374,23 @@ static void do_gc_urgent(int argc, char **argv, const struct cmd_desc *cmd)
 	if (argc == 3 && !strcmp(argv[2], "start")) {
 		printf("gc_urgent: start on %s\n", argv[1]);
 		sprintf(command, "echo %d > %s/%s/gc_urgent", 1, "/sys/fs/f2fs/", argv[1]);
-		system(command);
+		if (system(command))
+			exit(1);
 	} else if (argc == 3 && !strcmp(argv[2], "end")) {
 		printf("gc_urgent: end on %s\n", argv[1]);
 		sprintf(command, "echo %d > %s/%s/gc_urgent", 0, "/sys/fs/f2fs/", argv[1]);
-		system(command);
+		if (system(command))
+			exit(1);
 	} else if (argc == 4 && !strcmp(argv[2], "run")) {
 		printf("gc_urgent: start on %s for %d secs\n", argv[1], atoi(argv[3]));
 		sprintf(command, "echo %d > %s/%s/gc_urgent", 1, "/sys/fs/f2fs/", argv[1]);
-		system(command);
+		if (system(command))
+			exit(1);
 		sleep(atoi(argv[3]));
 		printf("gc_urgent: end on %s for %d secs\n", argv[1], atoi(argv[3]));
 		sprintf(command, "echo %d > %s/%s/gc_urgent", 0, "/sys/fs/f2fs/", argv[1]);
-		system(command);
+		if (system(command))
+			exit(1);
 	} else {
 		fputs("Excess arguments\n\n", stderr);
 		fputs(cmd->cmd_help, stderr);
